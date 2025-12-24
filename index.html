@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>القناة التلفزيونية - البث المباشر</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* شاشة الانتظار */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #333;
+            border-top: 5px solid #ff0000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* الهيدر مع الشعار داخل الفيديو */
+        .channel-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            opacity: 0.9;
+        }
+        
+        .channel-logo {
+            height: 60px;
+            width: auto;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+        }
+        
+        .channel-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        /* مشغل الفيديو */
+        .video-container {
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            position: relative;
+        }
+        
+        #main-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        
+        /* علامة مائية */
+        .watermark {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            opacity: 0.5;
+            z-index: 999;
+            pointer-events: none;
+        }
+        
+        .watermark img {
+            height: 80px;
+            width: auto;
+        }
+        
+        /* الإعلانات */
+        .ad-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, rgba(255,204,0,0.9), rgba(255,165,0,0.9));
+            padding: 10px 25px;
+            border-radius: 25px;
+            max-width: 90%;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid #ff9900;
+        }
+        
+        .ad-text {
+            color: #000;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* معلومات البث */
+        .broadcast-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 12px;
+            max-width: 350px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        
+        .now-playing {
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .live-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .next-show {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .viewers-count {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        /* علامة LIVE */
+        .live-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff0000, #ff4444);
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(255,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        @keyframes pulse {
+            0% { 
+                opacity: 1;
+                box-shadow: 0 4px 15px rgba(255,0,0,0.3);
+            }
+            50% { 
+                opacity: 0.7;
+                box-shadow: 0 4px 20px rgba(255,0,0,0.5);
+            }
+            100% { 
+                opacity: 1;
+                box-shadow: 0 4px 15px rgba(255,0,0,0.3);
+            }
+        }
+        
+        /* شريط الجودة */
+        .quality-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .quality-select {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* للجوال */
+        @media (max-width: 768px) {
+            .channel-header {
+                top: 10px;
+                right: 10px;
+                padding: 8px 15px;
+            }
+            
+            .channel-logo {
+                height: 40px;
+            }
+            
+            .channel-name {
+                font-size: 18px;
+            }
+            
+            .watermark {
+                bottom: 120px;
+                right: 20px;
+            }
+            
+            .watermark img {
+                height: 50px;
+            }
+            
+            .ad-container {
+                padding: 8px 15px;
+                font-size: 12px;
+                bottom: 15px;
+            }
+            
+            .broadcast-info {
+                right: 10px;
+                bottom: 10px;
+                padding: 10px 15px;
+                max-width: 250px;
+            }
+            
+            .live-indicator {
+                top: 10px;
+                left: 10px;
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            
+            .quality-bar {
+                top: 10px;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .channel-header {
+                flex-direction: column;
+                gap: 5px;
+                text-align: center;
+                padding: 10px;
+            }
+            
+            .broadcast-info {
+                max-width: 200px;
+                font-size: 12px;
+            }
+            
+            .ad-container {
+                width: 90%;
+                text-align: center;
+            }
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- شاشة الانتظار -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <h3>جاري تحميل البث المباشر...</h3>
+        <p>يرجى الانتظار</p>
+    </div>
+    
+    <!-- علامة البث المباشر -->
+    <div class="live-indicator">
+        <i class="fas fa-circle"></i> LIVE
+    </div>
+    
+    <!-- شريط الجودة -->
+    <div class="quality-bar">
+        <span>الجودة:</span>
+        <select class="quality-select" id="quality-select">
+            <option value="auto">تلقائي</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+        </select>
+    </div>
+    
+    <!-- الهيدر مع الشعار داخل المشغل -->
+    <div class="channel-header">
+        <img src="assets/logo.png" alt="شعار القناة" class="channel-logo" id="channel-logo">
+        <div class="channel-name" id="channel-name">القناة التلفزيونية</div>
+    </div>
+    
+    <!-- الشعار كعلامة مائية -->
+    <div class="watermark">
+        <img src="assets/logo.png" alt="علامة مائية" id="watermark-logo">
+    </div>
+    
+    <!-- مشغل الفيديو الرئيسي -->
+    <div class="video-container">
+        <iframe 
+            id="main-video"
+            src=""
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="width: 100%; height: 100%;">
+        </iframe>
+    </div>
+    
+    <!-- الإعلانات -->
+    <div class="ad-container" id="ad-container">
+        <div class="ad-text" id="current-ad">
+            <i class="fas fa-bullhorn"></i>
+            <span id="ad-text-content">مرحباً بكم في قناتنا التلفزيونية</span>
+        </div>
+    </div>
+    
+    <!-- معلومات البث -->
+    <div class="broadcast-info">
+        <div class="now-playing">
+            <span class="live-dot"></span>
+            <span id="current-show">جاري تحميل البرنامج...</span>
+        </div>
+        <div id="next-show" class="next-show">
+            التالي: <span id="next-show-title">يتم التحميل...</span>
+        </div>
+        <div class="viewers-count">
+            <i class="fas fa-eye"></i>
+            <span id="view-count">0</span> مشاهدين
+        </div>
+    </div>
+    
+    <script>
+        // رابط ملف الإعدادات على GitHub
+        const CONFIG_URL = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/data/broadcast.json';
+        
+        // حالة النظام
+        let currentConfig = null;
+        let isLive = false;
+        
+        // تحميل إعدادات القناة
+        async function loadChannelConfig() {
+            try {
+                const response = await fetch(CONFIG_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const config = await response.json();
+                currentConfig = config;
+                
+                // تطبيق الإعدادات
+                applyChannelConfig(config);
+                
+                // إخفاء شاشة الانتظار
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                }, 1000);
+                
+                return config;
+            } catch (error) {
+                console.error('Error loading config:', error);
+                showErrorMessage();
+                return null;
+            }
+        }
+        
+        // تطبيق إعدادات القناة
+        function applyChannelConfig(config) {
+            // اسم القناة
+            if (config.channel && config.channel.name) {
+                document.getElementById('channel-name').textContent = config.channel.name;
+                document.title = config.channel.name + ' - البث المباشر';
+            }
+            
+            // الشعار
+            if (config.channel && config.channel.logo) {
+                document.getElementById('channel-logo').src = config.channel.logo;
+                document.getElementById('watermark-logo').src = config.channel.logo;
+            }
+            
+            // البث الحالي
+            if (config.broadcast && config.broadcast.isLive) {
+                startBroadcast(config.broadcast);
+                isLive = true;
+            } else {
+                showOfflineMessage();
+                isLive = false;
+            }
+            
+            // البرامج
+            if (config.schedule && config.schedule.length > 0) {
+                updateSchedule(config.schedule);
+            }
+            
+            // الإعلانات
+            if (config.ads && config.ads.length > 0) {
+                startAdsRotation(config.ads);
+            }
+        }
+        
+        // بدء البث
+        function startBroadcast(broadcast) {
+            const videoFrame = document.getElementById('main-video');
+            
+            if (broadcast.type === 'youtube' && broadcast.url) {
+                const videoId = extractYouTubeId(broadcast.url);
+                videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&enablejsapi=1`;
+            } else if (broadcast.type === 'iptv' && broadcast.url) {
+                // لبث IPTV (سيحتاج مكتبة إضافية)
+                setupIPTVStream(broadcast.url);
+            }
+            
+            // تحديث البرنامج الحالي
+            if (broadcast.currentShow) {
+                document.getElementById('current-show').textContent = broadcast.currentShow;
+            }
+        }
+        
+        // استخراج ID من رابط يوتيوب
+        function extractYouTubeId(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length === 11) ? match[7] : null;
+        }
+        
+        // إعداد بث IPTV
+        function setupIPTVStream(url) {
+            // هنا يمكنك استخدام Video.js مع HLS
+            console.log('IPTV Stream URL:', url);
+            // ستحتاج لتنفيذ مشغل IPTV مناسب
+        }
+        
+        // تحديث الجدول
+        function updateSchedule(schedule) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            
+            for (let i = 0; i < schedule.length; i++) {
+                const [hours, minutes] = schedule[i].time.split(':').map(Number);
+                const scheduleTime = hours * 60 + minutes;
+                
+                if (scheduleTime <= currentTime && 
+                    (i === schedule.length - 1 || 
+                     schedule[i + 1].time.split(':').map(Number)[0] * 60 + 
+                     schedule[i + 1].time.split(':').map(Number)[1] > currentTime)) {
+                    
+                    document.getElementById('current-show').textContent = schedule[i].title;
+                    
+                    if (i < schedule.length - 1) {
+                        document.getElementById('next-show-title').textContent = 
+                            `${schedule[i + 1].title} (${schedule[i + 1].time})`;
+                    } else {
+                        document.getElementById('next-show').style.display = 'none';
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // تدوير الإعلانات
+        function startAdsRotation(ads) {
+            let currentAdIndex = 0;
+            
+            function showNextAd() {
+                if (ads.length > 0) {
+                    const ad = ads[currentAdIndex];
+                    document.getElementById('ad-text-content').textContent = ad.text;
+                    
+                    currentAdIndex = (currentAdIndex + 1) % ads.length;
+                    
+                    // تغيير الإعلان كل 30 ثانية
+                    setTimeout(showNextAd, 30000);
+                }
+            }
+            
+            showNextAd();
+        }
+        
+        // محاكاة عدد المشاهدين
+        function simulateViewers() {
+            let viewers = Math.floor(Math.random() * 2000) + 500;
+            
+            function update() {
+                // تغيير عشوائي في عدد المشاهدين
+                const change = Math.floor(Math.random() * 20) - 10;
+                viewers = Math.max(500, viewers + change);
+                
+                document.getElementById('view-count').textContent = 
+                    viewers.toLocaleString();
+                
+                // تحديث كل 10 ثواني
+                setTimeout(update, 10000);
+            }
+            
+            update();
+        }
+        
+        // رسالة عدم الاتصال
+        function showOfflineMessage() {
+            document.getElementById('current-show').textContent = 'البث متوقف حالياً';
+            document.getElementById('next-show').style.display = 'none';
+            document.getElementById('main-video').style.display = 'none';
+            
+            // عرض رسالة
+            const videoContainer = document.querySelector('.video-container');
+            videoContainer.innerHTML += `
+                <div style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    background: rgba(0,0,0,0.8);
+                    padding: 40px;
+                    border-radius: 15px;
+                    border: 2px solid #ff0000;
+                ">
+                    <i class="fas fa-satellite-dish" style="font-size: 60px; color: #ff0000; margin-bottom: 20px;"></i>
+                    <h2 style="color: white; margin-bottom: 10px;">البث متوقف حالياً</h2>
+                    <p style="color: #ccc;">يرجى العودة لاحقاً</p>
+                </div>
+            `;
+        }
+        
+        // رسالة خطأ
+        function showErrorMessage() {
+            document.getElementById('loading-screen').innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #ff0000; margin-bottom: 20px;"></i>
+                    <h3>حدث خطأ في تحميل القناة</h3>
+                    <p>يرجى المحاولة مرة أخرى</p>
+                    <button onclick="location.reload()" style="
+                        background: #ff0000;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        margin-top: 20px;
+                    ">
+                        إعادة تحميل
+                    </button>
+                </div>
+            `;
+        }
+        
+        // إدارة الجودة
+        document.getElementById('quality-select').addEventListener('change', function(e) {
+            const quality = e.target.value;
+            // هنا يمكنك إضافة كود لتغيير جودة البث
+            console.log('Quality changed to:', quality);
+        });
+        
+        // التحميل الأولي
+        window.onload = function() {
+            loadChannelConfig();
+            simulateViewers();
+            
+            // تحديث الإعدادات كل 30 ثانية
+            setInterval(loadChannelConfig, 30000);
+            
+            // تحديث الجدول كل دقيقة
+            setInterval(() => {
+                if (currentConfig && currentConfig.schedule) {
+                    updateSchedule(currentConfig.schedule);
+                }
+            }, 60000);
+        };
+        
+        // إعادة الاتصال عند عودة الإنترنت
+        window.addEventListener('online', () => {
+            loadChannelConfig();
+        });
+    </script>
+</body>
+</html>
