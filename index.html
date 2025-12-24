@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>القناة التلفزيونية - البث المباشر</title>
+    <title>القناة التلفزيونية الفضائية</title>
     <style>
         * {
             margin: 0;
@@ -12,1093 +12,667 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
             background: #000;
             color: #fff;
             overflow: hidden;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* شاشة الانتظار */
-        #loading-screen {
+            width: 100vw;
             position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        /* ========== مشغل الفيديو الرئيسي ========== */
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 1;
+        }
+
+        #main-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ========== شعار القناة (وسط الشاشة) ========== */
+        .center-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .center-logo img {
+            width: 120px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+        }
+
+        /* ========== إعلانات البانر ========== */
+        .banner-ad {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: linear-gradient(90deg, rgba(255, 204, 0, 0.95), rgba(255, 165, 0, 0.95));
+            padding: 8px 20px;
+            border-radius: 30px;
+            z-index: 30;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid #ff9900;
+            animation: bannerFloat 15s infinite ease-in-out;
+        }
+
+        .ad-text {
+            color: #000;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 5px 0;
+        }
+
+        /* ========== معلومات بسيطة ========== */
+        .simple-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            z-index: 40;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .channel-name-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            z-index: 40;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* ========== مؤشر البث المباشر ========== */
+        .live-badge {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff0000, #ff6b6b);
+            padding: 6px 15px;
+            border-radius: 20px;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(255, 0, 0, 0.3);
+            animation: livePulse 2s infinite;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        /* ========== زر ملء الشاشة ========== */
+        .fullscreen-btn {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 40;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* ========== شاشة التحميل ========== */
+        .loading-screen {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: #000;
+            z-index: 100;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
         }
-        
-        .spinner {
-            width: 80px;
-            height: 80px;
-            border: 6px solid #333;
-            border-top: 6px solid #ff0000;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 30px;
+
+        .loading-logo {
+            width: 100px;
+            height: auto;
+            margin-bottom: 20px;
+            animation: logoPulse 2s infinite;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* الهيدر - مناسب للتلفزيون */
-        .channel-header {
-            background: linear-gradient(90deg, #1a1a1a, #2d2d2d);
-            padding: 20px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 3px solid #ff0000;
-            height: 100px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-        }
-        
-        .channel-logo {
-            height: 80px;
-            width: auto;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
-        }
-        
-        .channel-name {
-            font-size: 36px;
-            font-weight: bold;
+
+        .loading-text {
             color: #fff;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            font-size: 16px;
+            margin-top: 10px;
         }
-        
-        .live-status {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: linear-gradient(45deg, #ff0000, #ff6b6b);
-            padding: 12px 30px;
-            border-radius: 30px;
-            font-size: 24px;
-            font-weight: bold;
-            animation: pulse 2s infinite;
-        }
-        
-        .live-dot {
-            width: 15px;
-            height: 15px;
-            background: #fff;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-        
+
+        /* ========== الحركات ========== */
         @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes livePulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        @keyframes bannerFloat {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            25% { transform: translateX(-50%) translateY(-5px); }
+            50% { transform: translateX(-50%) translateY(0); }
+            75% { transform: translateX(-50%) translateY(5px); }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* ========== وضع ملء الشاشة ========== */
+        body:fullscreen .simple-info,
+        body:fullscreen .channel-name-display,
+        body:fullscreen .fullscreen-btn {
+            display: none;
+        }
+
+        body:fullscreen .banner-ad {
+            bottom: 40px;
+        }
+
+        /* ========== دعم الهواتف والتقليب ========== */
+        @media (orientation: portrait) {
+            #main-video {
+                object-fit: contain;
+                background: #000;
+            }
+            
+            .center-logo img {
+                width: 80px;
+            }
+            
+            .banner-ad {
+                width: 95%;
+                padding: 6px 15px;
+                bottom: 10px;
+            }
+            
+            .ad-text {
+                font-size: 12px;
+            }
+        }
+
+        @media (orientation: landscape) {
+            #main-video {
+                object-fit: cover;
+            }
+            
+            .center-logo img {
+                width: 150px;
+            }
+        }
+
+        /* ========== للشاشات الصغيرة ========== */
+        @media (max-width: 480px) {
+            .center-logo img {
+                width: 60px;
+            }
+            
+            .banner-ad {
+                padding: 5px 10px;
+                border-radius: 20px;
+            }
+            
+            .ad-text {
+                font-size: 11px;
+            }
+            
+            .simple-info,
+            .channel-name-display {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+            
+            .live-badge {
+                padding: 4px 10px;
+                font-size: 10px;
+            }
+        }
+
+        /* ========== للإخفاء التلقائي ========== */
+        .auto-hide {
+            transition: opacity 0.5s;
         }
         
-        /* المحتوى الرئيسي - عمودي للتلفزيون */
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-        
-        /* الشريط الجانبي */
-        .sidebar {
-            width: 350px;
-            background: rgba(20, 20, 20, 0.95);
-            border-left: 2px solid #333;
-            padding: 25px;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-        }
-        
-        .sidebar-section {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-title {
-            color: #ff9900;
-            font-size: 22px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255,153,0,0.3);
-        }
-        
-        /* مشغل الفيديو الرئيسي */
-        .video-container {
-            flex: 1;
-            background: #000;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .video-wrapper {
-            flex: 1;
-            position: relative;
-            background: #000;
-        }
-        
-        #main-video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        .video-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        /* علامة مائية */
-        .watermark {
-            position: absolute;
-            bottom: 50px;
-            right: 50px;
-            opacity: 0.3;
+        .hide-controls .simple-info,
+        .hide-controls .channel-name-display,
+        .hide-controls .fullscreen-btn,
+        .hide-controls .banner-ad {
+            opacity: 0;
             pointer-events: none;
-            z-index: 998;
         }
         
-        .watermark img {
-            height: 120px;
-            width: auto;
+        .hide-controls .center-logo {
+            opacity: 0.2;
         }
-        
-        /* المعلومات أسفل الفيديو */
-        .video-info {
-            background: rgba(10, 10, 10, 0.9);
-            padding: 20px 40px;
-            border-top: 2px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 100px;
-        }
-        
-        .current-show {
-            font-size: 26px;
-            color: #00ff00;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .show-time {
-            color: #ff9900;
-            font-size: 22px;
-            background: rgba(255,153,0,0.1);
-            padding: 8px 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,153,0,0.3);
-        }
-        
-        .viewers-count {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 22px;
-            color: #ccc;
-        }
-        
-        /* قائمة البرامج */
-        .program-list {
-            list-style: none;
-        }
-        
-        .program-item {
-            padding: 15px;
-            margin: 10px 0;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            border-right: 4px solid #0088cc;
-            transition: all 0.3s;
-        }
-        
-        .program-item:hover {
-            background: rgba(255,255,255,0.1);
-            transform: translateX(-10px);
-        }
-        
-        .program-time {
-            color: #00ff00;
-            font-weight: bold;
-            font-size: 18px;
-            display: inline-block;
-            width: 80px;
-        }
-        
-        .program-title {
-            font-size: 18px;
-            margin-left: 10px;
-        }
-        
-        /* الإعلانات */
-        .ad-container {
-            background: linear-gradient(90deg, rgba(255,204,0,0.9), rgba(255,165,0,0.9));
-            padding: 15px 30px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border: 2px solid #ff9900;
-            box-shadow: 0 5px 15px rgba(255,153,0,0.3);
-        }
-        
-        .ad-text {
-            color: #000;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        /* قنوات IPTV */
-        .iptv-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-            margin-top: 15px;
-        }
-        
-        .iptv-channel {
-            background: rgba(0, 136, 204, 0.1);
-            border: 1px solid rgba(0, 136, 204, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .iptv-channel:hover {
-            background: rgba(0, 136, 204, 0.3);
-            transform: scale(1.05);
-        }
-        
-        .iptv-channel i {
-            font-size: 24px;
-            color: #0088cc;
-            margin-bottom: 8px;
-        }
-        
-        .iptv-channel span {
-            display: block;
-            font-size: 14px;
-            color: #fff;
-        }
-        
-        /* الوقت والتاريخ */
-        .time-date {
-            text-align: center;
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        
-        .time-display {
-            font-size: 32px;
-            color: #00ff00;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .date-display {
-            font-size: 18px;
-            color: #ccc;
-        }
-        
-        /* للشاشات الكبيرة */
-        @media (min-width: 1920px) {
-            .channel-header {
-                height: 120px;
-            }
-            
-            .channel-logo {
-                height: 100px;
-            }
-            
-            .channel-name {
-                font-size: 42px;
-            }
-            
-            .live-status {
-                font-size: 28px;
-                padding: 15px 35px;
-            }
-            
-            .sidebar {
-                width: 400px;
-            }
-            
-            .sidebar-title {
-                font-size: 26px;
-            }
-            
-            .video-info {
-                height: 120px;
-            }
-            
-            .current-show {
-                font-size: 30px;
-            }
-            
-            .show-time {
-                font-size: 26px;
-            }
-        }
-        
-        @media (max-width: 1366px) {
-            .channel-header {
-                padding: 15px 30px;
-                height: 80px;
-            }
-            
-            .channel-logo {
-                height: 60px;
-            }
-            
-            .channel-name {
-                font-size: 28px;
-            }
-            
-            .live-status {
-                font-size: 20px;
-                padding: 10px 20px;
-            }
-            
-            .sidebar {
-                width: 300px;
-            }
-            
-            .video-info {
-                height: 80px;
-                padding: 15px 30px;
-            }
-            
-            .current-show {
-                font-size: 22px;
-            }
-        }
-        
-        /* خاصية ملء الشاشة */
-        .fullscreen-btn {
+
+        /* ========== عدد المشاهدين الصغير ========== */
+        .viewers-badge {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 10px;
+            border-radius: 15px;
+            z-index: 40;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .fullscreen-btn:hover {
-            background: rgba(255,255,255,0.1);
+            gap: 5px;
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- شاشة الانتظار -->
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <h2 style="margin-bottom: 15px; font-size: 32px;">جاري تحميل البث المباشر...</h2>
-        <p id="loading-message" style="font-size: 20px; color: #ccc;">يرجى الانتظار</p>
+    <!-- شاشة التحميل -->
+    <div class="loading-screen" id="loading-screen">
+        <img src="https://via.placeholder.com/100x40/FF0000/ffffff?text=TV" 
+             alt="شعار القناة" 
+             class="loading-logo">
+        <div class="loading-text">جاري تحميل البث...</div>
     </div>
-    
-    <!-- الهيدر -->
-    <header class="channel-header">
-        <div class="logo-container">
-            <img src="https://via.placeholder.com/200x80/0088cc/ffffff?text=شعار+القناة" 
+
+    <!-- مشغل الفيديو الرئيسي -->
+    <div class="video-container">
+        <video id="main-video" autoplay playsinline muted>
+            <!-- يتم تعيين المصدر عبر الجافاسكريبت -->
+        </video>
+        
+        <!-- شعار القناة وسط الشاشة -->
+        <div class="center-logo">
+            <img src="https://via.placeholder.com/120x40/FF0000/ffffff?text=TV" 
                  alt="شعار القناة" 
-                 class="channel-logo" 
                  id="channel-logo">
-            <div class="channel-name" id="channel-name">القناة التلفزيونية</div>
         </div>
         
-        <div class="live-status" id="live-status">
+        <!-- معلومات القناة البسيطة -->
+        <div class="channel-name-display" id="channel-name">
+            القناة الفضائية
+        </div>
+        
+        <!-- مؤشر البث المباشر -->
+        <div class="live-badge">
             <span class="live-dot"></span>
-            <span>بث مباشر - LIVE</span>
+            <span>مباشر</span>
         </div>
-    </header>
-    
-    <!-- المحتوى الرئيسي -->
-    <div class="main-content">
-        <!-- الشريط الجانبي -->
-        <aside class="sidebar">
-            <!-- الوقت والتاريخ -->
-            <div class="time-date">
-                <div class="time-display" id="current-time">00:00:00</div>
-                <div class="date-display" id="current-date">الجمعة ١ يناير ٢٠٢٤</div>
-            </div>
-            
-            <!-- البرنامج الحالي -->
-            <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <i class="fas fa-broadcast-tower"></i>
-                    البرنامج الحالي
-                </div>
-                <div id="current-program-info" style="font-size: 20px; line-height: 1.6;">
-                    <div style="color: #00ff00; font-weight: bold;" id="current-show-title">جاري التحميل...</div>
-                    <div style="color: #ccc; margin-top: 10px;" id="current-show-desc">يتم تحميل معلومات البرنامج</div>
-                </div>
-            </div>
-            
-            <!-- جدول البرامج -->
-            <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <i class="fas fa-tv"></i>
-                    جدول البرامج
-                </div>
-                <ul class="program-list" id="schedule-list">
-                    <!-- يتم تعبئته بالجافاسكريبت -->
-                </ul>
-            </div>
-            
-            <!-- الإعلان -->
-            <div id="ad-container">
-                <div class="ad-text" id="current-ad">
-                    <i class="fas fa-bullhorn"></i>
-                    <span id="ad-text-content">مرحباً بكم في قناتنا التلفزيونية</span>
-                </div>
-            </div>
-            
-            <!-- قنوات IPTV -->
-            <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <i class="fas fa-satellite-dish"></i>
-                    قنوات IPTV
-                </div>
-                <div class="iptv-grid" id="iptv-channels">
-                    <!-- يتم تعبئته بالجافاسكريبت -->
-                </div>
-            </div>
-            
-            <!-- المشاهدين -->
-            <div class="sidebar-section">
-                <div class="sidebar-title">
-                    <i class="fas fa-eye"></i>
-                    عدد المشاهدين
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 42px; color: #ff9900; font-weight: bold;" id="view-count">0</div>
-                    <div style="color: #ccc; font-size: 18px;">مشاهد الآن</div>
-                </div>
-            </div>
-        </aside>
         
-        <!-- مشغل الفيديو -->
-        <main class="video-container">
-            <button class="fullscreen-btn" onclick="toggleFullscreen()">
-                <i class="fas fa-expand"></i> ملء الشاشة
-            </button>
-            
-            <div class="video-wrapper">
-                <iframe 
-                    id="main-video"
-                    class="video-iframe"
-                    src=""
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>
-                
-                <!-- علامة مائية -->
-                <div class="watermark">
-                    <img src="https://via.placeholder.com/200x80/0088cc/ffffff?text=شعار+القناة" 
-                         alt="علامة مائية" 
-                         id="watermark-logo">
-                </div>
-            </div>
-            
-            <!-- المعلومات أسفل الفيديو -->
-            <div class="video-info">
-                <div class="current-show">
-                    <span id="now-playing">● الآن يعرض:</span>
-                    <span id="current-show-display">جاري تحميل البرنامج...</span>
-                </div>
-                
-                <div class="viewers-count">
-                    <i class="fas fa-users"></i>
-                    <span id="viewers-count-display">0</span> مشاهد
-                </div>
-            </div>
-        </main>
+        <!-- معلومات بسيطة -->
+        <div class="simple-info">
+            <i class="fas fa-tv"></i>
+            <span id="current-program">فيلم سينمائي</span>
+        </div>
+        
+        <!-- عدد المشاهدين -->
+        <div class="viewers-badge">
+            <i class="fas fa-eye"></i>
+            <span id="viewers-count">0</span>
+        </div>
+        
+        <!-- إعلان البانر -->
+        <div class="banner-ad" id="banner-ad">
+            <div class="ad-text" id="ad-text">مرحباً بكم في قناتنا الفضائية</div>
+        </div>
+        
+        <!-- زر ملء الشاشة -->
+        <button class="fullscreen-btn" onclick="toggleFullscreen()" id="fullscreen-btn">
+            <i class="fas fa-expand"></i>
+        </button>
     </div>
-    
+
     <script>
-        // ================== إعدادات Google Sheets ==================
-        const SPREADSHEET_ID = '1BkZleGsrrhVccyJe8l2tLgMhGPIJjTJcXezyGQ72Tso';
+        // ================== إعدادات القناة ==================
+        // ⚠️ قم بتعديل هذه الإعدادات حسب احتياجاتك
         
-        // حالة النظام
-        let systemState = {
-            broadcast: null,
-            schedule: [],
-            ads: [],
-            iptvChannels: [],
-            settings: {},
-            isLive: false,
-            currentAdIndex: 0
+        const TV_CHANNEL = {
+            // معلومات القناة
+            name: "القناة الفضائية",
+            logo: "https://via.placeholder.com/120x40/FF0000/ffffff?text=TV", // رابط شعارك
+            
+            // رابط الفيديو الرئيسي (ضع رابط الفيديو هنا)
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            
+            // البرنامج الحالي
+            currentShow: "فيلم سينمائي: مغامرات شيقة",
+            
+            // إعلانات البانر
+            bannerAds: [
+                "📺 شاهدوا القناة الفضائية على التردد 12345",
+                "🎬 فيلم الليلة: مغامرات في الغابة",
+                "⭐ لا تنسوا تفعيل زر التنبيهات",
+                "📱 تابعونا على وسائل التواصل الاجتماعي",
+                "🎉 عروض خاصة للمشتركين الجدد"
+            ],
+            
+            // إعدادات العرض
+            showLogo: true,
+            showBanner: true,
+            autoPlay: true,
+            loopVideo: true,
+            
+            // عدد المشاهدين الافتراضي
+            defaultViewers: 1560
         };
-        
-        // متغيرات التحكم
-        let refreshInterval = null;
-        let adInterval = null;
-        let timeInterval = null;
-        
-        // ================== وظائف النظام ==================
-        
-        // تحميل جميع البيانات
-        async function loadAllData() {
-            try {
-                document.getElementById('loading-message').textContent = '📡 جاري تحميل بيانات القناة...';
-                
-                // تحميل بيانات القناة
-                await loadChannelData();
-                
-                // تحميل جدول البرامج
-                await loadScheduleData();
-                
-                // تحميل الإعلانات
-                await loadAdsData();
-                
-                // تحميل قنوات IPTV
-                await loadIPTVData();
-                
-                // تطبيق البيانات
-                applyAllData();
-                
-                // إخفاء شاشة الانتظار
+
+        // ================== متغيرات النظام ==================
+        let currentAdIndex = 0;
+        let viewerCount = TV_CHANNEL.defaultViewers;
+        let isFullscreen = false;
+        let hideTimer = null;
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // ================== تهيئة النظام ==================
+        function initTVChannel() {
+            // تطبيق إعدادات القناة
+            applyChannelSettings();
+            
+            // بدء تشغيل الفيديو
+            startVideoPlayback();
+            
+            // بدء الإعلانات
+            if (TV_CHANNEL.showBanner) {
+                startBannerAds();
+            }
+            
+            // بدء عداد المشاهدين
+            startViewersCounter();
+            
+            // إعداد الإخفاء التلقائي للعناصر
+            setupAutoHide();
+            
+            // إخفاء شاشة التحميل
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('loading-screen').style.display = 'none';
-                }, 1500);
-                
-                // بدء تحديث الوقت
-                startTimeUpdate();
-                
-                // بدء تحديث المشاهدين
-                startViewersCounter();
-                
-                console.log('✅ تم تحميل البيانات بنجاح');
-                
-            } catch (error) {
-                console.error('❌ خطأ في تحميل البيانات:', error);
-                showErrorMessage('فشل في تحميل البيانات من Google Sheets');
-            }
-        }
-        
-        // تحميل بيانات القناة
-        async function loadChannelData() {
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1&range=A1:G2&t=${Date.now()}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                
-                if (text.includes('Google Sheets')) {
-                    const jsonStr = text.substring(47).slice(0, -2);
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.table && data.table.rows && data.table.rows.length > 0) {
-                        const row = data.table.rows[0];
-                        const cells = row.c;
-                        
-                        systemState.broadcast = {
-                            channelName: cells[0]?.v || 'القناة التلفزيونية',
-                            logoUrl: cells[1]?.v || 'https://via.placeholder.com/200x80/0088cc/ffffff?text=شعار+القناة',
-                            currentShow: cells[2]?.v || 'برنامج مباشر',
-                            type: cells[3]?.v || 'youtube',
-                            url: cells[4]?.v || '',
-                            isLive: cells[5]?.v === 'نعم',
-                            description: cells[6]?.v || 'بث مباشر من القناة التلفزيونية'
-                        };
-                        
-                        systemState.isLive = systemState.broadcast.isLive;
-                    }
-                }
-            } catch (error) {
-                console.error('❌ خطأ في تحميل بيانات القناة:', error);
-            }
-        }
-        
-        // تحميل جدول البرامج
-        async function loadScheduleData() {
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet2&range=A1:F50&t=${Date.now()}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                
-                systemState.schedule = [];
-                
-                if (text.includes('Google Sheets')) {
-                    const jsonStr = text.substring(47).slice(0, -2);
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.table && data.table.rows) {
-                        data.table.rows.forEach(row => {
-                            const cells = row.c;
-                            if (cells[0]?.v) {
-                                systemState.schedule.push({
-                                    time: cells[0]?.v || '',
-                                    title: cells[1]?.v || '',
-                                    duration: cells[2]?.v || '',
-                                    type: cells[3]?.v || '',
-                                    active: cells[4]?.v === 'نعم',
-                                    category: cells[5]?.v || ''
-                                });
-                            }
-                        });
-                        
-                        // ترشيح البرامج النشطة فقط
-                        systemState.schedule = systemState.schedule.filter(item => item.active);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ خطأ في تحميل جدول البرامج:', error);
-            }
-        }
-        
-        // تحميل الإعلانات
-        async function loadAdsData() {
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet3&range=A1:E20&t=${Date.now()}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                
-                systemState.ads = [];
-                
-                if (text.includes('Google Sheets')) {
-                    const jsonStr = text.substring(47).slice(0, -2);
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.table && data.table.rows) {
-                        data.table.rows.forEach(row => {
-                            const cells = row.c;
-                            if (cells[0]?.v) {
-                                systemState.ads.push({
-                                    text: cells[0]?.v || '',
-                                    duration: parseInt(cells[1]?.v) || 30,
-                                    color: cells[2]?.v || '#FF9900',
-                                    type: cells[3]?.v || 'نص',
-                                    active: cells[4]?.v === 'نعم'
-                                });
-                            }
-                        });
-                        
-                        // ترشيح الإعلانات النشطة فقط
-                        systemState.ads = systemState.ads.filter(ad => ad.active);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ خطأ في تحميل الإعلانات:', error);
-            }
-        }
-        
-        // تحميل قنوات IPTV
-        async function loadIPTVData() {
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet4&range=A1:F20&t=${Date.now()}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                
-                systemState.iptvChannels = [];
-                
-                if (text.includes('Google Sheets')) {
-                    const jsonStr = text.substring(47).slice(0, -2);
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.table && data.table.rows) {
-                        data.table.rows.forEach(row => {
-                            const cells = row.c;
-                            if (cells[0]?.v) {
-                                systemState.iptvChannels.push({
-                                    name: cells[0]?.v || '',
-                                    url: cells[1]?.v || '',
-                                    category: cells[2]?.v || '',
-                                    country: cells[3]?.v || '',
-                                    active: cells[4]?.v === 'نعم',
-                                    quality: cells[5]?.v || 'SD'
-                                });
-                            }
-                        });
-                        
-                        // ترشيح القنوات النشطة فقط
-                        systemState.iptvChannels = systemState.iptvChannels.filter(channel => channel.active);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ خطأ في تحميل قنوات IPTV:', error);
-            }
-        }
-        
-        // تطبيق جميع البيانات
-        function applyAllData() {
-            if (systemState.broadcast) {
-                applyChannelData();
-                
-                if (systemState.isLive && systemState.broadcast.url) {
-                    playBroadcast();
-                } else {
-                    showOfflineMessage();
-                }
-            }
+                }, 500);
+            }, 2000);
             
-            applyScheduleData();
-            applyAdsData();
-            applyIPTVData();
-            
-            // بدء عرض الإعلانات
-            if (systemState.ads.length > 0) {
-                startAdsRotation();
-            }
+            console.log('📺 القناة التلفزيونية جاهزة للبث');
         }
-        
-        // تطبيق بيانات القناة
-        function applyChannelData() {
-            const broadcast = systemState.broadcast;
+
+        // ================== تطبيق إعدادات القناة ==================
+        function applyChannelSettings() {
+            // اسم القناة
+            document.getElementById('channel-name').textContent = TV_CHANNEL.name;
+            document.title = TV_CHANNEL.name;
             
-            // تحديث اسم القناة والشعار
-            document.getElementById('channel-name').textContent = broadcast.channelName;
-            document.getElementById('channel-logo').src = broadcast.logoUrl;
-            document.getElementById('watermark-logo').src = broadcast.logoUrl;
-            document.title = broadcast.channelName + ' - البث المباشر';
+            // الشعار
+            document.getElementById('channel-logo').src = TV_CHANNEL.logo;
+            document.querySelector('.loading-logo').src = TV_CHANNEL.logo;
             
-            // تحديث البرنامج الحالي
-            document.getElementById('current-show-title').textContent = broadcast.currentShow;
-            document.getElementById('current-show-desc').textContent = broadcast.description;
-            document.getElementById('current-show-display').textContent = broadcast.currentShow;
+            // البرنامج الحالي
+            document.getElementById('current-program').textContent = TV_CHANNEL.currentShow;
             
-            // تحديث حالة البث
-            const liveStatus = document.getElementById('live-status');
-            if (systemState.isLive) {
-                liveStatus.style.background = 'linear-gradient(45deg, #ff0000, #ff6b6b)';
-                liveStatus.innerHTML = '<span class="live-dot"></span><span>بث مباشر - LIVE</span>';
-            } else {
-                liveStatus.style.background = 'linear-gradient(45deg, #666, #888)';
-                liveStatus.innerHTML = '<i class="fas fa-pause-circle"></i><span>البث متوقف</span>';
-            }
+            // إظهار/إخفاء العناصر
+            document.querySelector('.center-logo').style.display = TV_CHANNEL.showLogo ? 'block' : 'none';
+            document.getElementById('banner-ad').style.display = TV_CHANNEL.showBanner ? 'block' : 'none';
         }
-        
-        // تطبيق جدول البرامج
-        function applyScheduleData() {
-            const scheduleList = document.getElementById('schedule-list');
-            scheduleList.innerHTML = '';
+
+        // ================== تشغيل الفيديو ==================
+        function startVideoPlayback() {
+            const video = document.getElementById('main-video');
             
-            // ترتيب البرامج حسب الوقت
-            const sortedSchedule = [...systemState.schedule].sort((a, b) => {
-                return a.time.localeCompare(b.time);
-            });
-            
-            // عرض أول 5 برامج فقط
-            sortedSchedule.slice(0, 5).forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'program-item';
-                li.innerHTML = `
-                    <div>
-                        <span class="program-time">${item.time}</span>
-                        <span class="program-title">${item.title}</span>
-                    </div>
-                    <small style="color: #888; display: block; margin-top: 5px;">
-                        ${item.duration} | ${item.category}
-                    </small>
-                `;
-                scheduleList.appendChild(li);
-            });
-        }
-        
-        // تطبيق الإعلانات
-        function applyAdsData() {
-            if (systemState.ads.length === 0) {
-                document.getElementById('ad-container').style.display = 'none';
+            if (!TV_CHANNEL.videoUrl) {
+                showError("لم يتم تحديد رابط فيديو");
                 return;
             }
             
-            const adContainer = document.getElementById('ad-container');
-            const ad = systemState.ads[0];
+            video.src = TV_CHANNEL.videoUrl;
+            video.loop = TV_CHANNEL.loopVideo;
+            video.muted = false;
             
-            adContainer.style.background = `linear-gradient(90deg, ${ad.color}, ${darkenColor(ad.color, 20)})`;
-            adContainer.style.borderColor = ad.color;
-            document.getElementById('ad-text-content').textContent = ad.text;
-        }
-        
-        // تطبيق قنوات IPTV
-        function applyIPTVData() {
-            const iptvContainer = document.getElementById('iptv-channels');
-            iptvContainer.innerHTML = '';
-            
-            // عرض أول 6 قنوات فقط
-            systemState.iptvChannels.slice(0, 6).forEach(channel => {
-                const div = document.createElement('div');
-                div.className = 'iptv-channel';
-                div.innerHTML = `
-                    <i class="fas fa-tv"></i>
-                    <span>${channel.name}</span>
-                    <small style="color: #888; font-size: 12px;">${channel.quality}</small>
-                `;
-                div.onclick = () => switchToIPTV(channel);
-                iptvContainer.appendChild(div);
+            video.addEventListener('loadeddata', function() {
+                video.play().catch(e => {
+                    console.log("يجب التفاعل مع الصفحة لتشغيل الصوت");
+                    video.muted = true;
+                    video.play();
+                });
             });
             
-            if (systemState.iptvChannels.length === 0) {
-                iptvContainer.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">لا توجد قنوات متاحة</div>';
-            }
-        }
-        
-        // تشغيل البث
-        function playBroadcast() {
-            const broadcast = systemState.broadcast;
+            video.addEventListener('error', function() {
+                showError("تعذر تحميل الفيديو. الرجاء التحقق من الرابط.");
+            });
             
-            if (broadcast.type === 'youtube') {
-                const videoId = extractYouTubeId(broadcast.url);
-                if (videoId) {
-                    const videoFrame = document.getElementById('main-video');
-                    videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&showinfo=0&enablejsapi=1`;
-                }
-            } else if (broadcast.type === 'iptv') {
-                // يمكن إضافة دعم IPTV هنا
-                console.log('IPTV Stream:', broadcast.url);
-            }
+            // تكييف الفيديو مع اتجاه الشاشة
+            setupVideoOrientation();
         }
-        
-        // التحويل إلى IPTV
-        function switchToIPTV(channel) {
-            alert(`سيتم التبديل إلى قناة ${channel.name}\nهذه الميزة تحت التطوير`);
-        }
-        
-        // استخراج ID من رابط يوتيوب
-        function extractYouTubeId(url) {
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/watch\?.*v=)([^#&?]*)/,
-                /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-            ];
+
+        function setupVideoOrientation() {
+            const video = document.getElementById('main-video');
             
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match && (match[1] || match[2])) {
-                    return match[1] || match[2];
+            function handleOrientation() {
+                if (window.innerHeight > window.innerWidth) {
+                    // الوضع الرأسي
+                    video.style.objectFit = 'contain';
+                } else {
+                    // الوضع الأفقي
+                    video.style.objectFit = 'cover';
                 }
             }
-            return null;
+            
+            handleOrientation();
+            window.addEventListener('resize', handleOrientation);
+            window.addEventListener('orientationchange', handleOrientation);
         }
-        
-        // بدء تدوير الإعلانات
-        function startAdsRotation() {
-            if (systemState.ads.length === 0) return;
-            
-            let currentAdIndex = 0;
-            
-            function showNextAd() {
-                const ad = systemState.ads[currentAdIndex];
-                const adContainer = document.getElementById('ad-container');
-                
-                document.getElementById('ad-text-content').textContent = ad.text;
-                adContainer.style.background = `linear-gradient(90deg, ${ad.color}, ${darkenColor(ad.color, 20)})`;
-                adContainer.style.borderColor = ad.color;
-                
-                currentAdIndex = (currentAdIndex + 1) % systemState.ads.length;
-            }
-            
+
+        // ================== إعلانات البانر ==================
+        function startBannerAds() {
             // عرض أول إعلان
-            showNextAd();
+            showNextBannerAd();
             
-            // تغيير الإعلان كل 30 ثانية
-            if (adInterval) clearInterval(adInterval);
-            adInterval = setInterval(showNextAd, 30000);
+            // تغيير الإعلان كل 10 ثواني
+            setInterval(showNextBannerAd, 10000);
         }
-        
-        // بدء تحديث الوقت
-        function startTimeUpdate() {
-            function updateTime() {
-                const now = new Date();
-                
-                // الوقت
-                const timeString = now.toLocaleTimeString('ar-SA', { 
-                    hour12: true,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                document.getElementById('current-time').textContent = timeString;
-                
-                // التاريخ
-                const dateString = now.toLocaleDateString('ar-SA', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                document.getElementById('current-date').textContent = dateString;
-            }
+
+        function showNextBannerAd() {
+            if (!TV_CHANNEL.bannerAds || TV_CHANNEL.bannerAds.length === 0) return;
             
-            updateTime();
-            if (timeInterval) clearInterval(timeInterval);
-            timeInterval = setInterval(updateTime, 1000);
+            const adText = TV_CHANNEL.bannerAds[currentAdIndex];
+            document.getElementById('ad-text').textContent = adText;
+            
+            // إضافة حركة بسيطة
+            const banner = document.getElementById('banner-ad');
+            banner.style.animation = 'none';
+            setTimeout(() => {
+                banner.style.animation = 'bannerFloat 15s infinite ease-in-out';
+            }, 10);
+            
+            // الانتقال للإعلان التالي
+            currentAdIndex = (currentAdIndex + 1) % TV_CHANNEL.bannerAds.length;
         }
-        
-        // بدء عداد المشاهدين
+
+        // ================== عداد المشاهدين ==================
         function startViewersCounter() {
-            let viewers = Math.floor(Math.random() * 5000) + 1000;
+            // تحديث أول مرة
+            updateViewersCount();
             
-            function update() {
-                const change = Math.floor(Math.random() * 50) - 20;
-                viewers = Math.max(800, viewers + change);
+            // تحديث كل 20-40 ثانية عشوائياً
+            setInterval(updateViewersCount, Math.random() * 20000 + 20000);
+        }
+
+        function updateViewersCount() {
+            // تغيير عشوائي بين -30 و +50
+            const change = Math.floor(Math.random() * 80) - 30;
+            viewerCount = Math.max(100, viewerCount + change);
+            document.getElementById('viewers-count').textContent = viewerCount.toLocaleString();
+        }
+
+        // ================== الإخفاء التلقائي ==================
+        function setupAutoHide() {
+            const videoContainer = document.querySelector('.video-container');
+            
+            // إعادة تعيين المؤقت عند الحركة
+            function resetHideTimer() {
+                clearTimeout(hideTimer);
+                document.body.classList.remove('hide-controls');
                 
-                const viewersFormatted = viewers.toLocaleString();
-                document.getElementById('view-count').textContent = viewersFormatted;
-                document.getElementById('viewers-count-display').textContent = viewersFormatted;
-                
-                setTimeout(update, 15000);
+                hideTimer = setTimeout(() => {
+                    document.body.classList.add('hide-controls');
+                }, 3000);
             }
             
-            update();
-        }
-        
-        // تغميق اللون
-        function darkenColor(color, percent) {
-            const num = parseInt(color.replace("#", ""), 16);
-            const amt = Math.round(2.55 * percent);
-            const R = (num >> 16) - amt;
-            const G = (num >> 8 & 0x00FF) - amt;
-            const B = (num & 0x0000FF) - amt;
+            // إعادة الظهور عند اللمس/النقر
+            videoContainer.addEventListener('click', function() {
+                document.body.classList.remove('hide-controls');
+                resetHideTimer();
+                
+                // تبديل ملء الشاشة عند النقر المزدوج
+                if (this.dblClickTimer) {
+                    clearTimeout(this.dblClickTimer);
+                    toggleFullscreen();
+                } else {
+                    this.dblClickTimer = setTimeout(() => {
+                        delete this.dblClickTimer;
+                    }, 300);
+                }
+            });
             
-            return "#" + (
-                0x1000000 +
-                (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-                (B < 255 ? B < 1 ? 0 : B : 255)
-            ).toString(16).slice(1);
+            // إعادة الظهور عند الحركة
+            videoContainer.addEventListener('mousemove', resetHideTimer);
+            videoContainer.addEventListener('touchmove', resetHideTimer);
+            
+            // بدء المؤقت
+            resetHideTimer();
         }
-        
-        // ملء الشاشة
+
+        // ================== ملء الشاشة ==================
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`خطأ في ملء الشاشة: ${err.message}`);
-                });
+            const videoContainer = document.querySelector('.video-container');
+            
+            if (!isFullscreen) {
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.mozRequestFullScreen) {
+                    videoContainer.mozRequestFullScreen();
+                } else if (videoContainer.webkitRequestFullscreen) {
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.msRequestFullscreen) {
+                    videoContainer.msRequestFullscreen();
+                }
+                isFullscreen = true;
+                document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-compress"></i>';
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
                 }
+                isFullscreen = false;
+                document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-expand"></i>';
             }
         }
-        
-        // عرض رسالة البث متوقف
-        function showOfflineMessage() {
-            const videoWrapper = document.querySelector('.video-wrapper');
-            videoWrapper.innerHTML = `
-                <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    text-align: center;
-                    width: 80%;
-                ">
-                    <i class="fas fa-satellite-dish" style="font-size: 120px; color: #666; margin-bottom: 30px;"></i>
-                    <h2 style="color: white; font-size: 42px; margin-bottom: 20px;">لا يوجد بث مباشر حالياً</h2>
-                    <p style="color: #ccc; font-size: 24px; margin-bottom: 40px;">يرجى العودة لاحقاً لمشاهدة البث المباشر</p>
-                    <button onclick="checkForUpdates()" style="
-                        background: linear-gradient(90deg, #00b894, #00a085);
-                        color: white;
-                        border: none;
-                        padding: 15px 40px;
-                        border-radius: 30px;
-                        cursor: pointer;
-                        font-size: 20px;
-                        font-weight: bold;
-                    ">
-                        <i class="fas fa-sync-alt"></i> التحقق من التحديثات
-                    </button>
-                </div>
-            `;
-        }
-        
-        // التحقق من التحديثات
-        async function checkForUpdates() {
-            document.getElementById('loading-screen').style.display = 'flex';
-            document.getElementById('loading-message').textContent = '🔄 جاري التحقق من التحديثات...';
-            
-            await loadAllData();
-        }
-        
-        // عرض رسالة خطأ
-        function showErrorMessage(message) {
+
+        // مستمع حدث خروج ملء الشاشة
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                isFullscreen = false;
+                document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        });
+
+        // ================== وظائف مساعدة ==================
+        function showError(message) {
             const loadingScreen = document.getElementById('loading-screen');
-            loadingScreen.innerHTML = `
-                <div style="text-align: center;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 100px; color: #ff4444; margin-bottom: 30px;"></i>
-                    <h2 style="color: white; font-size: 36px; margin-bottom: 20px;">حدث خطأ</h2>
-                    <p style="color: #ff9999; font-size: 24px; margin-bottom: 30px;">${message}</p>
-                    <button onclick="location.reload()" style="
-                        background: #0088cc;
-                        color: white;
-                        border: none;
-                        padding: 15px 40px;
-                        border-radius: 30px;
-                        cursor: pointer;
-                        font-size: 20px;
-                        font-weight: bold;
-                        margin-top: 20px;
-                    ">
-                        <i class="fas fa-redo"></i> إعادة المحاولة
-                    </button>
-                </div>
-            `;
+            loadingScreen.querySelector('.loading-text').textContent = message;
+            loadingScreen.querySelector('.loading-logo').style.animation = 'none';
+            loadingScreen.style.background = 'linear-gradient(135deg, #8B0000, #000)';
         }
-        
-        // ================== التحميل والتشغيل ==================
-        
-        // التحميل الأولي
-        window.onload = function() {
-            loadAllData();
-            
-            // تحديث البيانات كل 30 ثانية
-            refreshInterval = setInterval(loadAllData, 30000);
-            
-            // دعم ملء الشاشة
-            document.addEventListener('fullscreenchange', function() {
-                const fullscreenBtn = document.querySelector('.fullscreen-btn');
-                if (document.fullscreenElement) {
-                    fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i> تصغير الشاشة';
-                } else {
-                    fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> ملء الشاشة';
-                }
-            });
-        };
-        
-        // التنظيف عند إغلاق الصفحة
-        window.addEventListener('beforeunload', function() {
-            if (refreshInterval) clearInterval(refreshInterval);
-            if (adInterval) clearInterval(adInterval);
-            if (timeInterval) clearInterval(timeInterval);
+
+        // ================== بدء النظام ==================
+        // بدء التشغيل عندما تكون الصفحة جاهزة
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTVChannel);
+        } else {
+            initTVChannel();
+        }
+
+        // منع الإجراءات الافتراضية
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // منع سحب الصور
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // إشعار عند محاولة المغادرة
+        window.addEventListener('beforeunload', function(e) {
+            if (isFullscreen) {
+                document.exitFullscreen();
+            }
         });
     </script>
 </body>
